@@ -1,0 +1,93 @@
+﻿@model IEnumerable<OrderManagementSystem.Models.Order>
+
+    @{
+    ViewData["Title"] = "Sales Order";
+    }
+
+    <link rel="stylesheet" href="~/css/order-form.css" />
+
+    <div class="page-container">
+        <h2 class="title">SALES ORDER</h2>
+
+        <form method="get" class="search-container">
+            <div class="search-field">
+                <label>Keywords</label>
+                <input type="text" name="keyword" value="@Context.Request.Query["keyword"]" />
+            </div>
+            <div class="search-field">
+                <label>Order Date</label>
+                <input type="date" name="orderDate" value="@Context.Request.Query["orderDate"]" />
+            </div>
+            <div class="search-button">
+                <button type="submit" class="btn-search">Search</button>
+                <a href="/Order" class="btn-reset">Reset</a>
+            </div>
+        </form>
+
+        @if (!string.IsNullOrEmpty(Context.Request.Query["keyword"]) || !string.IsNullOrEmpty(Context.Request.Query["orderDate"]))
+    {
+        <div class="search-summary">
+            <span>
+                🔍 Showing results for
+                @if (!string.IsNullOrEmpty(Context.Request.Query["keyword"]))
+                {
+                <strong>'@Context.Request.Query["keyword"]'</strong>
+                }
+                @if (!string.IsNullOrEmpty(Context.Request.Query["keyword"]) && !string.IsNullOrEmpty(Context.Request.Query["orderDate"]))
+                {
+                <span> on </span>
+                }
+                @if (!string.IsNullOrEmpty(Context.Request.Query["orderDate"]))
+                {
+                    var parsedDate = DateTime.Parse(Context.Request.Query["orderDate"]);
+                <strong>@parsedDate.ToString("MM/dd/yyyy")</strong>
+                }
+            </span>
+        </div>
+    }
+
+        <div class="action-buttons">
+            <a href="/Order/Create" class="btn-add">Add New Data</a>
+            <a href="/Order/Export" class="btn-export">Export To Excel</a>
+        </div>
+
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Action</th>
+                    <th>Sales Order</th>
+                    <th>Order Date</th>
+                    <th>Customer</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+            {
+                var no = 1;
+                foreach (var item in Model)
+                {
+                <tr>
+                    <td>@no</td>
+                    <td>
+                        <a href="/Order/Edit/@item.SO_ORDER_ID">✏️</a>
+                        <form method="post" action="/Order/DeleteConfirmed/@item.SO_ORDER_ID" style="display:inline;" onsubmit="return confirm('Are you sure?')">
+                            <button type="submit" class="btn-icon">🗑️</button>
+                        </form>
+                    </td>
+                    <td>@item.ORDER_NO</td>
+                    <td>@item.ORDER_DATE.ToShortDateString()</td>
+                    <td>@item.Customer?.CUSTOMER_NAME</td>
+                </tr>
+                    no++;
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5">No data found.</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>

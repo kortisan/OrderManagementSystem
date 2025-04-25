@@ -1,0 +1,159 @@
+﻿@model OrderManagementSystem.ViewModels.OrderCreateViewModel
+
+@{
+    ViewData["Title"] = "Add New Sales Order";
+}
+
+<link rel="stylesheet" href="~/css/order-form.css" />
+
+<div class="page-container">
+    <h2>ADD NEW - SALES ORDER</h2>
+
+    <form asp-action="Create" method="post" onsubmit="prepareItemsJson()">
+        <div class="form-section">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Sales Order Number *</label>
+                    <input asp-for="ORDER_NO" class="custom-input" />
+                    <span asp-validation-for="ORDER_NO" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label>Customer</label>
+                    <select asp-for="COM_CUSTOMER_ID" asp-items="Model.Customers" class="custom-input">
+                        <option value="">Select One</option>
+                    </select>
+                    <span asp-validation-for="COM_CUSTOMER_ID" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Order Date *</label>
+                    <input asp-for="ORDER_DATE" type="date" class="custom-input" />
+                    <span asp-validation-for="ORDER_DATE" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea class="custom-input" disabled>-- optional field --</textarea>
+                </div>
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="items-section">
+            <h4>Item Details</h4>
+            <button type="button" class="add-item-btn" onclick="addItem()">Add Item</button>
+            <table class="item-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Action</th>
+                        <th>ITEM NAME</th>
+                        <th>QTY</th>
+                        <th>PRICE</th>
+                        <th>TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody id="itemTableBody"></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3"></td>
+                        <td><strong id="totalQty">0</strong></td>
+                        <td></td>
+                        <td><strong id="totalAmount">0.00</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="pagination">
+                <button onclick="prevPage()" type="button">❮</button>
+                <span id="pageInfo"></span>
+                <button onclick="nextPage()" type="button">❯</button>
+            </div>
+        </div>
+
+        <input type="hidden" name="ItemsJson" id="ItemsJson" />
+
+        <div class="form-footer">
+            <button type="submit" class="save-btn">Save</button>
+            <a href="/Order" class="cancel-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        let items = [];
+        let currentPage = 1;
+        const pageSize = 5;
+
+        function addItem() {
+            items.push({ ITEM_NAME: '', QUANTITY: 1, PRICE: 0 });
+            renderItems();
+        }
+
+        function removeItem(index) {
+            const absoluteIndex = (currentPage - 1) * pageSize + index;
+            items.splice(absoluteIndex, 1);
+            renderItems();
+        }
+
+        function updateItem(index, field, value) {
+            const absoluteIndex = (currentPage - 1) * pageSize + index;
+            if (field === "QUANTITY") items[absoluteIndex][field] = parseInt(value);
+            else if (field === "PRICE") items[absoluteIndex][field] = parseFloat(value);
+            else items[absoluteIndex][field] = value;
+            renderItems();
+        }
+
+        function renderItems() {
+            const tbody = document.getElementById("itemTableBody");
+            tbody.innerHTML = "";
+            const start = (currentPage - 1) * pageSize;
+            const pageItems = items.slice(start, start + pageSize);
+
+            pageItems.forEach((item, index) => {
+                const total = item.QUANTITY * item.PRICE;
+                const row = `
+                        <tr>
+                            <td>${start + index + 1}</td>
+                            <td><button type="button" class="delete-btn" onclick="removeItem(${index})">🗑️</button></td>
+                            <td><input type="text" value="${item.ITEM_NAME}" onchange="updateItem(${index}, 'ITEM_NAME', this.value)" /></td>
+                            <td><input type="number" value="${item.QUANTITY}" onchange="updateItem(${index}, 'QUANTITY', this.value)" /></td>
+                            <td><input type="number" value="${item.PRICE}" step="0.01" onchange="updateItem(${index}, 'PRICE', this.value)" /></td>
+                            <td>${total.toFixed(2)}</td>
+                        </tr>
+                    `;
+                tbody.insertAdjacentHTML("beforeend", row);
+            });
+
+            document.getElementById("totalQty").innerText = items.reduce((sum, i) => sum + i.QUANTITY, 0);
+            document.getElementById("totalAmount").innerText = items.reduce((sum, i) => sum + (i.QUANTITY * i.PRICE), 0).toFixed(2);
+
+            document.getElementById("pageInfo").innerText = `Page ${currentPage} of ${Math.ceil(items.length / pageSize)}`;
+        }
+
+        function nextPage() {
+            if (currentPage < Math.ceil(items.length / pageSize)) {
+                currentPage++;
+                renderItems();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderItems();
+            }
+        }
+
+        function prepareItemsJson() {
+            document.getElementById("ItemsJson").value = JSON.stringify(items);
+        }
+
+        window.onload = () => {
+            addItem();
+        };
+    </script>
+}
